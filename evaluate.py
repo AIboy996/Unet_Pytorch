@@ -1,7 +1,10 @@
+"""evaluate model by Dice score"""
 import torch
 import torch.nn.functional as F
+from torch.utils.data import DataLoader
 from tqdm import tqdm
 
+from dataset import load_dataset
 from dicescore import multiclass_dice_coeff, dice_coeff
 
 
@@ -38,3 +41,13 @@ def evaluate(net, dataloader, device, amp=True):
 
     net.train()
     return dice_score / max(num_val_batches, 1)
+
+if __name__ == "__main__":
+    test_set = load_dataset('../dataset/test_data_npy/')
+    dataloader = DataLoader(test_set,
+                        batch_size=8,
+                        shuffle=True)
+    model_unet = torch.load('./checkpoints/best_model_unet.pth')
+    device = torch.device('cuda' if torch.cuda.is_available() else 'mps')
+    val_score = evaluate(model_unet, dataloader, device)
+    print(f'{val_score = }')

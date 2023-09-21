@@ -1,3 +1,4 @@
+"""function for plot"""
 import matplotlib.pyplot as plt
 import numpy as np
 import time
@@ -30,6 +31,11 @@ def visualize_images_with_masks(title, images, masks_true, masks_pred, num_rows=
 def visualize_train_process(train_log):
     fig, ax = plt.subplots(figsize=(10, 10))
     epoch_l, train_loss, val_score = list(zip(*train_log))
+    train_loss = np.array(train_loss)
+    train_loss -= train_loss.min()
+    val_score = np.array(val_score)
+    val_score -= val_score.min()
+
     ax.plot(epoch_l, train_loss, label='train loss')
     ax.plot(epoch_l, val_score, label='validation score')
     ax.set_xticks(epoch_l)

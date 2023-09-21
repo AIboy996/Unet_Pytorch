@@ -1,3 +1,4 @@
+"""generate 2d image data(in .npy format) from .nii file"""
 import os
 import numpy as np
 from SimpleITK import GetArrayFromImage, ReadImage
