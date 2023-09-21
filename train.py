@@ -8,7 +8,7 @@ import os
 import numpy as np
 # local library
 from Net import UNet
-from plot import visualize_images_with_masks
+from plot import visualize_images_with_masks, visualize_train_process
 from dataset import load_dataset
 from dicescore import dice_loss
 from evaluate import evaluate
@@ -42,7 +42,10 @@ model = UNet(n_channels=n_channels, n_classes=n_classes).to(device)
 # model = torch.load('./checkpoints/model.pth')
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-
+# train log
+train_log = [
+    # (epoch, train_loss, val_score)
+]
 # train loop
 for epoch in range(n_epoch):
     model.train()
@@ -67,7 +70,6 @@ for epoch in range(n_epoch):
         
         # plot every 500 batch
         if batch_idx%500 == 0:
-            
             image = img.cpu().numpy().transpose(0, 2, 3, 1)
             predicted_mask = outputs.cpu().detach().numpy()
             ground_truth_mask = msk.cpu().detach().numpy()
@@ -75,9 +77,11 @@ for epoch in range(n_epoch):
             predicted_mask = np.argmax(predicted_mask, axis=1)
             ground_truth_mask = np.argmax(ground_truth_mask, axis=1)
             visualize_images_with_masks(epoch+1, image, ground_truth_mask, predicted_mask, num_rows=5)
-    train_loss /= len(train_dataloader)
-    val_score = evaluate(model, val_dataloader, device)
-    
-    print(f"Epoch [{epoch+1}/{n_epoch}] Train Loss: {train_loss:.4f}, Validatin Score: {val_score:.4f}")
 
+    train_loss /= len(train_dataloader)
+    val_score = evaluate(model, val_dataloader, device).cpu()
+    train_log.append((epoch+1, train_loss, val_score))
+    print(f"Epoch [{epoch+1}/{n_epoch}] Train Loss: {train_loss:.4f}, Validation Score: {val_score:.4f}")
+
+visualize_train_process(train_log)
 torch.save(model, './checkpoints/model.pth')

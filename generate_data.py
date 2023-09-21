@@ -25,6 +25,6 @@ def delete_empty(data_dir):
             os.remove(os.path.join(data_dir, file.replace('lab', 'img')))
 
 if __name__ == "__main__":
-    save2npy(raw_data_dir='../dataset/train_original')
-    save2npy(raw_data_dir='../dataset/val_data')
-    save2npy(raw_data_dir='../dataset/test_data')
+    save2npy(raw_data_dir='../dataset/train_original', save_dir='../dataset/train_data_npy')
+    save2npy(raw_data_dir='../dataset/val_data', save_dir='../dataset/val_data_npy')
+    save2npy(raw_data_dir='../dataset/test_data', save_dir='../dataset/test_data_npy')

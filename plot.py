@@ -1,5 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import time
+import os
 
 # Define a function to visualize images, masks, and predictions
 def visualize_images_with_masks(title, images, masks_true, masks_pred, num_rows=5):
@@ -19,4 +21,19 @@ def visualize_images_with_masks(title, images, masks_true, masks_pred, num_rows=
         ax[2].imshow(masks_pred[idx], cmap='gray')
         ax[2].set_title('Predicted Mask')
         ax[2].axis('off')
-    fig.savefig(fname=f'./fig/{str(title)}.jpg', bbox_inches='tight')
+    if not os.path.exists('./fig'):
+        os.mkdir('./fig')
+    fig.savefig(fname=f'./fig/Epoch{title}.jpg', bbox_inches='tight')
+
+def visualize_train_process(train_log):
+    fig, ax = plt.subplots(figsize=(10, 10))
+    epoch_l, train_loss, val_score = list(zip(*train_log))
+    ax.plot(epoch_l, train_loss, label='train loss')
+    ax.plot(epoch_l, val_score, label='validation score')
+    ax.set_xticks(epoch_l)
+    ax.set_xlabel('epoch')
+    ax.set_xlabel('loss/score')
+    ax.legend()
+    if not os.path.exists('./fig'):
+        os.mkdir('./fig')
+    fig.savefig(fname=f'./fig/train_at_{time.strftime(r"%m-%d-%I%p")}.jpg', bbox_inches='tight')
