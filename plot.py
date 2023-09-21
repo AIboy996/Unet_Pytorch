@@ -3,6 +3,8 @@ import numpy as np
 import time
 import os
 
+TIME = time.strftime(r"%m-%d(%I.%M%p)")
+
 # Define a function to visualize images, masks, and predictions
 def visualize_images_with_masks(title, images, masks_true, masks_pred, num_rows=5):
     fig, axes = plt.subplots(num_rows, 3, figsize=(10, 15))
@@ -21,9 +23,9 @@ def visualize_images_with_masks(title, images, masks_true, masks_pred, num_rows=
         ax[2].imshow(masks_pred[idx], cmap='gray')
         ax[2].set_title('Predicted Mask')
         ax[2].axis('off')
-    if not os.path.exists('./fig'):
-        os.mkdir('./fig')
-    fig.savefig(fname=f'./fig/Epoch{title}.jpg', bbox_inches='tight')
+    if not os.path.exists(f'./fig/train_at_{TIME}'):
+        os.mkdir(f'./fig/train_at_{TIME}')
+    fig.savefig(fname=f'./fig/train_at_{TIME}/Epoch{title}.jpg', bbox_inches='tight')
 
 def visualize_train_process(train_log):
     fig, ax = plt.subplots(figsize=(10, 10))
@@ -32,8 +34,8 @@ def visualize_train_process(train_log):
     ax.plot(epoch_l, val_score, label='validation score')
     ax.set_xticks(epoch_l)
     ax.set_xlabel('epoch')
-    ax.set_xlabel('loss/score')
+    ax.set_ylabel('loss/score')
     ax.legend()
     if not os.path.exists('./fig'):
         os.mkdir('./fig')
-    fig.savefig(fname=f'./fig/train_at_{time.strftime(r"%m-%d-%I%p")}.jpg', bbox_inches='tight')
+    fig.savefig(fname=f'./fig/train_at_{TIME}.jpg', bbox_inches='tight')

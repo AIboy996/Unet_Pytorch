@@ -1,6 +1,7 @@
 from torch.utils.data import Dataset
 import numpy as np
 import os
+import re
 # for data augmentation
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
@@ -26,13 +27,15 @@ class CustomDataset(Dataset):
     def __getitem__(self, idx):
         image = np.load(self.image_paths[idx])
         mask = self.factorize(np.load(self.mask_paths[idx]))
-        
+        position = re.match('.*?slice(?P<position>\d+)', self.mask_paths[idx]).groupdict()['position']
+        position = int(position)
+
         if self.transform:
             transformed = self.transform(image=image, mask=mask)
             image = transformed['image']
             mask = transformed['mask']
 
-        return image, mask
+        return image, mask, position
 
 # data augmentation
 DATA_TRANSFORM = A.Compose([
