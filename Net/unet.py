@@ -1,6 +1,6 @@
 """ Full assembly of the parts to form the complete network """
 
-from .layers import  *
+from .layers_for_unet import  *
 
 class UNet(nn.Module):
     def __init__(self, n_channels, n_classes, bilinear=False):
@@ -20,6 +20,7 @@ class UNet(nn.Module):
         self.up3 = (Up(256, 128 // factor, bilinear))
         self.up4 = (Up(128, 64, bilinear))
         self.outc = (OutConv(64, n_classes))
+        self.softmax = nn.Softmax(dim=1) # x.shape = (batch_size, n_channels, width, height)
 
     def forward(self, x):
         x1 = self.inc(x)
@@ -32,7 +33,7 @@ class UNet(nn.Module):
         x = self.up3(x, x2)
         x = self.up4(x, x1)
         x = self.outc(x)
-        return F.softmax(x)
+        return self.softmax(x)
 
     def use_checkpointing(self):
         self.inc = torch.utils.checkpoint(self.inc)

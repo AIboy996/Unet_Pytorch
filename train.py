@@ -6,60 +6,32 @@ from torch.utils.data import DataLoader, random_split
 # for data process
 import os
 import numpy as np
-# for data augmentation
-import albumentations as A
-from albumentations.pytorch import ToTensorV2
 # local library
-from unet import UNet
+from Net import UNet
 from plot import visualize_images_with_masks
-from dataset import CustomDataset
+from dataset import load_dataset
 from dicescore import dice_loss
 from evaluate import evaluate
 
 # get the path of image and mask
-data_path = '../dataset/train_data_npy'
-image_path_list = []
-mask_path_list = []
-for file in os.listdir(data_path):
-    if file.startswith('.'):
-        continue
-    elif file.endswith('_img.npy'):
-        image_path_list.append(os.path.join(data_path, file))
-    elif file.endswith('_lab.npy'):
-        mask_path_list.append(os.path.join(data_path, file))
-    else:
-        print(file)
-        raise Exception('Dataset Error')
-print(f'{len(image_path_list) = }, {len(mask_path_list) = }')
+train_set = load_dataset('../dataset/train_data_npy/')
+val_set = load_dataset('../dataset/val_data_npy/')
+# test_set = load_dataset('../dataset/test_data_npy/')
 
-# data augmentation
-train_transform = A.Compose([
-    A.Resize(256, 256),
-    A.HorizontalFlip(p=0.3),
-    A.VerticalFlip(p=0.2),
-    ToTensorV2(),
-], is_check_shapes=False)
-
-# data loader
-dataset = CustomDataset(image_paths=image_path_list,
-                        mask_paths=mask_path_list,
-                        transform=train_transform)
-
-train_set, val_set = random_split(dataset, [0.8, 0.2])
-# split dataset for training and validation
-batch_size = 16
+batch_size = 8
 train_dataloader = DataLoader(train_set,
                         batch_size=batch_size,
                         shuffle=True)
 val_dataloader = DataLoader(val_set,
                         batch_size=batch_size,
                         shuffle=True)
+
 # Device configuration
 device = torch.device('cuda' if torch.cuda.is_available() else 'mps')
 print('train on ', device.type)
 
 # hyperparameter
-n_epoch = 50
+n_epoch = 2
 learning_rate = 0.001
 early_stopping_patience = 10
 
