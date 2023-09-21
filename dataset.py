@@ -55,7 +55,7 @@ def load_dataset(data_path, image_suffix='_img.npy', mask_suffix='_lab.npy'):
         else:
             print(file)
             raise Exception('Dataset Error')
-    print(f'load {len(image_path_list) = }, {len(mask_path_list) = } from {data_path}')
+    print(f'loaded {len(image_path_list) = }, {len(mask_path_list) = } from {data_path}')
 
     # data set
     dataset = CustomDataset(image_paths=image_path_list,

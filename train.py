@@ -2,12 +2,12 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import DataLoader, random_split
+from torch.utils.data import DataLoader
 # for data process
 import os
 import numpy as np
 # local library
-from Net import UNet
+from Net import UNet, FNN
 from plot import visualize_images_with_masks, visualize_train_process
 from dataset import load_dataset
 from dicescore import dice_loss
@@ -18,7 +18,7 @@ train_set = load_dataset('../dataset/train_data_npy/')
 val_set = load_dataset('../dataset/val_data_npy/')
 # test_set = load_dataset('../dataset/test_data_npy/')
 
-batch_size = 8
+batch_size = 16
 train_dataloader = DataLoader(train_set,
                         batch_size=batch_size,
                         shuffle=True)
@@ -31,17 +31,31 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'mps')
 print('train on ', device.type)
 
 # hyperparameter
-n_epoch = 2
+n_epoch = 40
 learning_rate = 0.001
 early_stopping_patience = 10
 
 # Unet model
 n_classes  = 4 # LV, RV, Myo and others
 n_channels = 1 # single channel
-model = UNet(n_channels=n_channels, n_classes=n_classes).to(device)
-# model = torch.load('./checkpoints/model.pth')
+MODEL_PATH = './checkpoints/model.pth'
+try:
+    model = torch.load(MODEL_PATH)
+    print('loaded model from ', MODEL_PATH)
+except Exception as e:
+    print('loading model failed', repr(e))
+    model = UNet(n_channels=n_channels, n_classes=n_classes).to(device)
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+
+# FNN
+input_dim = 28*28
+hidden_dim = 100
+output_dim = 10
+
+model = FNN(input_dim, hidden_dim, output_dim)
+
+
 # train log
 train_log = [
     # (epoch, train_loss, val_score)
@@ -59,7 +73,7 @@ for epoch in range(n_epoch):
         msk = msk.float()
 
         optimizer.zero_grad()
-        outputs = model(img)
+        outputs, input_for_FNN = model(img)
         # loss
         loss = criterion(outputs, msk)
         loss += dice_loss(outputs, msk, multiclass=True)
@@ -84,4 +98,4 @@ for epoch in range(n_epoch):
     print(f"Epoch [{epoch+1}/{n_epoch}] Train Loss: {train_loss:.4f}, Validation Score: {val_score:.4f}")
 
 visualize_train_process(train_log)
-torch.save(model, './checkpoints/model.pth')
+torch.save(model, MODEL_PATH)
