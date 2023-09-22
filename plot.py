@@ -17,11 +17,11 @@ def visualize_images_with_masks(title, images, masks_true, masks_pred, num_rows=
         ax[0].set_title(f'Image{i+1}')
         ax[0].axis('off')
         
-        ax[1].imshow(masks_true[idx], cmap='gray')
+        ax[1].imshow(masks_true[idx,0,...], cmap='gray')
         ax[1].set_title('Ground Truth Mask')
         ax[1].axis('off')
         
-        ax[2].imshow(masks_pred[idx], cmap='gray')
+        ax[2].imshow(masks_pred[idx,0,...], cmap='gray')
         ax[2].set_title('Predicted Mask')
         ax[2].axis('off')
     if not os.path.exists(f'./fig/train_at_{TIME}'):

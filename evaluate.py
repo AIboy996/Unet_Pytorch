@@ -49,5 +49,5 @@ if __name__ == "__main__":
                         shuffle=True)
     model_unet = torch.load('./checkpoints/best_model_unet.pth')
     device = torch.device('cuda' if torch.cuda.is_available() else 'mps')
-    val_score = evaluate(model_unet, dataloader, device)
-    print(f'{val_score = }')
+    test_score = evaluate(model_unet, dataloader, device)
+    print(f'{test_score = }')

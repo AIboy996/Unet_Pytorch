@@ -14,10 +14,10 @@ from dicescore import dice_loss
 from evaluate import evaluate
 
 # hyperparameter
-n_epoch = 2
-batch_size = 8
-learning_rate = 0.001
-alpha, beta = 0.8,0.1 # alpha for Unet, beta for ACNN, 1-alpha-beta for FNN
+n_epoch = 40 
+batch_size = 16
+learning_rate = 0.005
+alpha, beta = 0.7,0.1 # alpha for Unet, beta for ACNN, 1-alpha-beta for FNN
 
 # constants
 N_CLASSES  = 4 # LV, RV, Myo and others
@@ -79,7 +79,7 @@ try:
     print('loaded acnn model from ', ACNN_PATH)
 except Exception as e:
     print('load acnn model failed', repr(e))
-    model_acnn = AutoEncoder(input_size=(256,256), in_channels=4).to(device)
+    model_acnn = AutoEncoder(input_size=(256,256), in_channels=1).to(device)
 criterion_acnn = nn.MSELoss()
 optimizer_acnn = optim.Adam(model_acnn.parameters(), lr=learning_rate)
 
@@ -123,11 +123,13 @@ for epoch in range(n_epoch):
 
         # calcute loss of ACNN
         optimizer_acnn.zero_grad()
-        loss_acnn_mse = criterion_acnn(model_acnn(outputs), model_acnn(msk))
+        predicted_mask = (outputs>0.5).to(torch.int64).argmax(axis=1, keepdim=True)
+        ground_truth_mask = msk.argmax(axis=1, keepdim=True)
+        loss_acnn_mse = criterion_acnn(model_acnn(predicted_mask.float()), model_acnn(ground_truth_mask.float()))
 
         # total loss
         
-        loss = alpha*(loss_cross + loss_dice) + beta*loss_acnn_mse + (1-alpha-beta)*loss_fnn_mse
+        loss = alpha*(0.2*loss_cross + 0.8*loss_dice) + beta*loss_acnn_mse + (1-alpha-beta)*loss_fnn_mse
         loss.backward()
         optimizer_fnn.step()
         optimizer_unet.step()
@@ -137,11 +139,8 @@ for epoch in range(n_epoch):
         # plot every 500 batch
         if batch_idx%500 == 0:
             image = img.cpu().numpy().transpose(0, 2, 3, 1)
-            predicted_mask = outputs.cpu().detach().numpy()
-            ground_truth_mask = msk.cpu().detach().numpy()
-            predicted_mask = (predicted_mask > 0.5).astype(np.uint8)
-            predicted_mask = np.argmax(predicted_mask, axis=1)
-            ground_truth_mask = np.argmax(ground_truth_mask, axis=1)
+            predicted_mask = predicted_mask.cpu().detach().numpy()
+            ground_truth_mask = ground_truth_mask.cpu().detach().numpy()
             visualize_images_with_masks(epoch+1, image, ground_truth_mask, predicted_mask, num_rows=5)
 
     train_loss /= len(train_dataloader)
