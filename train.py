@@ -7,17 +7,17 @@ from torch.utils.data import DataLoader
 # for data process
 import numpy as np
 # local library
-from Net import UNet, FNN
+from Net import UNet, FNN, AutoEncoder
 from plot import visualize_images_with_masks, visualize_train_process
 from dataset import load_dataset
 from dicescore import dice_loss
 from evaluate import evaluate
 
 # hyperparameter
-n_epoch = 1
+n_epoch = 2
 batch_size = 8
 learning_rate = 0.001
-alpha, beta = 0.2,0.6 # alpha for Cross Entropy, beta for Dice Loss, 1-alpha-beta for MSE of FNN
+alpha, beta = 0.8,0.1 # alpha for Unet, beta for ACNN, 1-alpha-beta for FNN
 
 # constants
 N_CLASSES  = 4 # LV, RV, Myo and others
@@ -25,6 +25,7 @@ N_CHANNELS = 1 # single channel
 UNET_PATH = './checkpoints/model_unet.pth'
 BEST_MODEL_PATH = './checkpoints/best_model_unet.pth'
 FNN_PATH = './checkpoints/model_fnn.pth'
+ACNN_PATH = './checkpoints/model_acnn.pth'
 
 # load data
 train_set = load_dataset('../dataset/train_data_npy/')
@@ -52,25 +53,35 @@ criterion_unet = nn.CrossEntropyLoss()
 optimizer_unet = optim.Adam(model_unet.parameters(), lr=learning_rate)
 
 # FNN
-input_dim = 256*(256//16)*(256//16)
-"""
-Explanation: input dimension of FNN
-256 = num of channels
-256 = width/height of input image
-16 = 2**4 where 4 = times of downscaling in UNet
-"""
-hidden_dim1 = 256
-hidden_dim2 = 64
-output_dim = 1
-
 try:
     model_fnn = torch.load(FNN_PATH)
     print('loaded fnn model from ', FNN_PATH)
 except Exception as e:
     print('load fnn model failed', repr(e))
-    model_fnn = FNN(input_dim, hidden_dim1, hidden_dim2, output_dim).to(device)
+    model_fnn = FNN(
+        input_dim=256*(256//16)*(256//16), 
+        hidden_dim1=256, 
+        hidden_dim2=64, 
+        output_dim=1
+    ).to(device)
+    """
+    Explanation: input dimension of FNN
+    256 = num of channels
+    256 = width/height of input image
+    16 = 2**4 where 4 = times of downscaling in UNet
+    """
 criterion_fnn = nn.MSELoss() # nearly the same as Frobenius norm
 optimizer_fnn = optim.Adam(model_fnn.parameters(), lr=learning_rate)
+
+# ACNN
+try:
+    model_acnn = torch.load(ACNN_PATH)
+    print('loaded acnn model from ', ACNN_PATH)
+except Exception as e:
+    print('load acnn model failed', repr(e))
+    model_acnn = AutoEncoder(input_size=(256,256), in_channels=4).to(device)
+criterion_acnn = nn.MSELoss()
+optimizer_acnn = optim.Adam(model_acnn.parameters(), lr=learning_rate)
 
 # train loop
 train_log = [
@@ -80,6 +91,7 @@ best_score = 0
 for epoch in range(n_epoch):
     model_unet.train()
     model_fnn.train()
+    model_acnn.train()
     train_loss = 0.0
 
     for batch_idx, (img, msk, position) in enumerate(train_dataloader):
@@ -107,14 +119,19 @@ for epoch in range(n_epoch):
         optimizer_fnn.zero_grad()
         input_for_FNN = input_for_FNN.flatten(start_dim=1)
         position_pred = model_fnn(input_for_FNN)
-        loss_mse = criterion_fnn(position_pred.flatten(), position)
+        loss_fnn_mse = criterion_fnn(position_pred.flatten(), position)
+
+        # calcute loss of ACNN
+        optimizer_acnn.zero_grad()
+        loss_acnn_mse = criterion_acnn(model_acnn(outputs), model_acnn(msk))
 
         # total loss
         
-        loss = alpha*loss_cross + beta*loss_dice + (1-alpha-beta)*loss_mse
+        loss = alpha*(loss_cross + loss_dice) + beta*loss_acnn_mse + (1-alpha-beta)*loss_fnn_mse
         loss.backward()
         optimizer_fnn.step()
         optimizer_unet.step()
+        optimizer_acnn.step()
         train_loss += loss.item()
 
         # plot every 500 batch
@@ -138,3 +155,4 @@ for epoch in range(n_epoch):
 visualize_train_process(train_log)
 torch.save(model_unet, UNET_PATH)
 torch.save(model_fnn, FNN_PATH)
+torch.save(model_acnn, ACNN_PATH)

@@ -27,6 +27,7 @@ def visualize_images_with_masks(title, images, masks_true, masks_pred, num_rows=
     if not os.path.exists(f'./fig/train_at_{TIME}'):
         os.mkdir(f'./fig/train_at_{TIME}')
     fig.savefig(fname=f'./fig/train_at_{TIME}/Epoch{title}.jpg', bbox_inches='tight')
+    plt.close()
 
 def visualize_train_process(train_log):
     fig, ax = plt.subplots(figsize=(10, 10))
@@ -45,3 +46,4 @@ def visualize_train_process(train_log):
     if not os.path.exists('./fig'):
         os.mkdir('./fig')
     fig.savefig(fname=f'./fig/train_at_{TIME}.jpg', bbox_inches='tight')
+    plt.close()
