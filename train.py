@@ -13,11 +13,14 @@ from dataset import load_dataset
 from dicescore import dice_loss
 from evaluate import evaluate
 
+# ACNN
+ACNN_ON = False
+
 # hyperparameter
 n_epoch = 40 
 batch_size = 16
-learning_rate = 0.005
-alpha, beta = 0.7,0.1 # alpha for Unet, beta for ACNN, 1-alpha-beta for FNN
+learning_rate = 0.01
+alpha, beta = 0.9,0.01 # alpha for Unet, beta for ACNN, 1-alpha-beta for FNN
 
 # constants
 N_CLASSES  = 4 # LV, RV, Myo and others
@@ -74,14 +77,15 @@ criterion_fnn = nn.MSELoss() # nearly the same as Frobenius norm
 optimizer_fnn = optim.Adam(model_fnn.parameters(), lr=learning_rate)
 
 # ACNN
-try:
-    model_acnn = torch.load(ACNN_PATH)
-    print('loaded acnn model from ', ACNN_PATH)
-except Exception as e:
-    print('load acnn model failed', repr(e))
-    model_acnn = AutoEncoder(input_size=(256,256), in_channels=1).to(device)
-criterion_acnn = nn.MSELoss()
-optimizer_acnn = optim.Adam(model_acnn.parameters(), lr=learning_rate)
+if ACNN_ON:
+    try:
+        model_acnn = torch.load(ACNN_PATH)
+        print('loaded acnn model from ', ACNN_PATH)
+    except Exception as e:
+        print('load acnn model failed', repr(e))
+        model_acnn = AutoEncoder(input_size=(256,256), in_channels=1).to(device)
+    criterion_acnn = nn.MSELoss()
+    optimizer_acnn = optim.Adam(model_acnn.parameters(), lr=learning_rate)
 
 # train loop
 train_log = [
@@ -91,7 +95,8 @@ best_score = 0
 for epoch in range(n_epoch):
     model_unet.train()
     model_fnn.train()
-    model_acnn.train()
+    if ACNN_ON:
+        model_acnn.train()
     train_loss = 0.0
 
     for batch_idx, (img, msk, position) in enumerate(train_dataloader):
@@ -121,19 +126,28 @@ for epoch in range(n_epoch):
         position_pred = model_fnn(input_for_FNN)
         loss_fnn_mse = criterion_fnn(position_pred.flatten(), position)
 
-        # calcute loss of ACNN
-        optimizer_acnn.zero_grad()
+        # model prediction
         predicted_mask = (outputs>0.5).to(torch.int64).argmax(axis=1, keepdim=True)
+        all_black_loss = 0
+        if predicted_mask.sum() == 0:
+            all_black_loss += 20
         ground_truth_mask = msk.argmax(axis=1, keepdim=True)
-        loss_acnn_mse = criterion_acnn(model_acnn(predicted_mask.float()), model_acnn(ground_truth_mask.float()))
+
+        # calcute loss of ACNN
+        if ACNN_ON:
+            optimizer_acnn.zero_grad()
+            loss_acnn_mse = criterion_acnn(model_acnn(predicted_mask.float()), model_acnn(ground_truth_mask.float()))
+        else:
+            loss_acnn_mse = 0
 
         # total loss
-        
         loss = alpha*(0.2*loss_cross + 0.8*loss_dice) + beta*loss_acnn_mse + (1-alpha-beta)*loss_fnn_mse
+        loss += all_black_loss
         loss.backward()
         optimizer_fnn.step()
         optimizer_unet.step()
-        optimizer_acnn.step()
+        if ACNN_ON:
+            optimizer_acnn.step()
         train_loss += loss.item()
 
         # plot every 500 batch
@@ -154,4 +168,5 @@ for epoch in range(n_epoch):
 visualize_train_process(train_log)
 torch.save(model_unet, UNET_PATH)
 torch.save(model_fnn, FNN_PATH)
-torch.save(model_acnn, ACNN_PATH)
+if ACNN_ON:
+    torch.save(model_acnn, ACNN_PATH)
