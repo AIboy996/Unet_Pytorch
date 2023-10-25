@@ -3,11 +3,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import time
 import os
+import io
+from PIL import Image
 
 TIME = time.strftime(r"%m-%d(%I.%M%p)")
 
 # Define a function to visualize images, masks, and predictions
-def visualize_images_with_masks(title, images, masks_true, masks_pred, num_rows=5):
+def visualize_images_with_masks(images, masks_true, masks_pred, num_rows=5):
     fig, axes = plt.subplots(num_rows, 3, figsize=(10, 15))
     for i in range(num_rows):
         ax = axes[i]
@@ -24,26 +26,8 @@ def visualize_images_with_masks(title, images, masks_true, masks_pred, num_rows=
         ax[2].imshow(masks_pred[idx,0,...], cmap='gray')
         ax[2].set_title('Predicted Mask')
         ax[2].axis('off')
-    if not os.path.exists(f'./fig/train_at_{TIME}'):
-        os.mkdir(f'./fig/train_at_{TIME}')
-    fig.savefig(fname=f'./fig/train_at_{TIME}/Epoch{title}.jpg', bbox_inches='tight')
-    plt.close()
-
-def visualize_train_process(train_log):
-    fig, ax = plt.subplots(figsize=(10, 10))
-    epoch_l, train_loss, val_score = list(zip(*train_log))
-    train_loss = np.array(train_loss)
-    train_loss -= train_loss.min()
-    val_score = np.array(val_score)
-    val_score -= val_score.min()
-
-    ax.plot(epoch_l, train_loss, label='train loss')
-    ax.plot(epoch_l, val_score, label='validation score')
-    ax.set_xticks(epoch_l)
-    ax.set_xlabel('epoch')
-    ax.set_ylabel('loss/score')
-    ax.legend()
-    if not os.path.exists('./fig'):
-        os.mkdir('./fig')
-    fig.savefig(fname=f'./fig/train_at_{TIME}.jpg', bbox_inches='tight')
-    plt.close()
+    # if not os.path.exists(f'./fig/train_at_{TIME}'):
+    #     os.mkdir(f'./fig/train_at_{TIME}')
+    bio = io.BytesIO()
+    fig.savefig(bio, bbox_inches='tight', dpi=100)
+    return np.array(Image.open(bio)).transpose((2,0,1))

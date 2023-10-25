@@ -19,10 +19,10 @@ class CustomDataset(Dataset):
     @staticmethod
     def factorize(arr):
             res = np.zeros(arr.shape)
-            res[arr==0] = 0
-            res[arr==200] = 1
-            res[arr==500] = 2
-            res[arr==600] = 3
+            res[arr==0] = 0     # Others
+            res[arr==200] = 1   # Myocardium
+            res[arr==500] = 2   # RightVentricle
+            res[arr==600] = 3   # LeftVentricle
             return res
 
     def __getitem__(self, idx):
