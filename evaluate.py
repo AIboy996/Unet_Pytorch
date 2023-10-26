@@ -54,8 +54,8 @@ def test_model(model_path):
     dataloader = DataLoader(test_set,
                         batch_size=16,
                         shuffle=True)
-    model_unet = torch.load(model_path)
     device = torch.device('cuda' if torch.cuda.is_available() else 'mps')
+    model_unet = torch.load(model_path, map_location=device)
     dice_score, assd_score, hd_score = evaluate(model_unet, dataloader, device)
     return dice_score, assd_score, hd_score
 

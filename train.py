@@ -20,16 +20,16 @@ writer = SummaryWriter()
 
 
 # add on
-ACNN_ON = False
-FNN_ON = False
+ACNN_ON = True
+FNN_ON = True
 
 # hyperparameter
-n_epoch = 10
+n_epoch = 150
 batch_size = 16
 learning_rate = 0.001
 lambda_dice = 0.6
-alpha = 0.8   # alpha for Unet
-beta = 0.001  # beta for ACNN
+alpha = 0.95   # alpha for Unet
+beta = 0.005  # beta for ACNN
 # 1-alpha-beta for FNN
 
 # constants
@@ -75,7 +75,7 @@ print('train on ', device.type)
 
 # Unet model
 try:
-    model_unet = torch.load(UNET_PATH)
+    model_unet = torch.load(UNET_PATH, map_location=device)
     print('loaded unet model from ', UNET_PATH)
 except Exception as e:
     print('load unet model failed', repr(e))
@@ -86,7 +86,7 @@ optimizer_unet = optim.Adam(model_unet.parameters(), lr=learning_rate)
 # FNN
 if FNN_ON:
     try:
-        model_fnn = torch.load(FNN_PATH)
+        model_fnn = torch.load(FNN_PATH, map_location=device)
         print('loaded fnn model from ', FNN_PATH)
     except Exception as e:
         print('load fnn model failed', repr(e))
@@ -108,7 +108,7 @@ if FNN_ON:
 # ACNN
 if ACNN_ON:
     try:
-        model_acnn = torch.load(ACNN_PATH)
+        model_acnn = torch.load(ACNN_PATH, map_location=device)
         print('loaded acnn model from ', ACNN_PATH)
     except Exception as e:
         print('load acnn model failed', repr(e))

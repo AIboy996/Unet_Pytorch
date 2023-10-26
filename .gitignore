@@ -1,6 +1,2 @@
 __pycache__
 .DS_Store
-*.jpg
-*.pth
-/checkpoints*
-runs

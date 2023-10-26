@@ -46,7 +46,12 @@ DATA_TRANSFORM = A.Compose([
     ToTensorV2(),
 ], is_check_shapes=False)
 
-def load_dataset(data_path, image_suffix='_img.npy', mask_suffix='_lab.npy'):
+BASE_DATA_TRANSFORM = A.Compose([
+    A.Resize(256, 256),
+    ToTensorV2(),
+], is_check_shapes=False)
+
+def load_dataset(data_path, image_suffix='_img.npy', mask_suffix='_lab.npy', augmentation=True):
     image_path_list = []
     mask_path_list = []
     for file in os.listdir(data_path):
@@ -64,5 +69,5 @@ def load_dataset(data_path, image_suffix='_img.npy', mask_suffix='_lab.npy'):
     # data set
     dataset = CustomDataset(image_paths=image_path_list,
                             mask_paths=mask_path_list,
-                            transform=DATA_TRANSFORM)
+                            transform=DATA_TRANSFORM if augmentation else BASE_DATA_TRANSFORM)
     return dataset
